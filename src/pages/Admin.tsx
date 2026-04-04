@@ -300,8 +300,8 @@ export default function Admin() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0 space-y-0.5">
                       <p className="text-xs text-muted-foreground">{getUserEmail(d.user_id)}</p>
-                      <p className="font-semibold">${Number(d.amount).toFixed(2)}</p>
-                      <p className="text-[10px] text-muted-foreground">{new Date(d.created_at).toLocaleString()}</p>
+                      <p className="font-semibold">{d.currency === "UGX" ? `UGX ${Number(d.amount).toLocaleString()}` : `$${Number(d.amount).toFixed(2)}`}</p>
+                      <p className="text-[10px] text-muted-foreground">{new Date(d.created_at).toLocaleString()} • {d.payment_method === "airtel_money" ? "Airtel Money" : "USDT TRC20"}</p>
                       {d.screenshot_url && <a href={d.screenshot_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Image className="h-3 w-3" /> View Screenshot</a>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
