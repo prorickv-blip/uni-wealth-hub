@@ -33,11 +33,11 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center mx-auto mb-4">
-            <span className="text-primary-foreground font-display font-bold">U</span>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md shadow-xl border-border">
+        <CardHeader className="text-center pb-2">
+          <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+            <span className="text-primary-foreground font-display font-bold text-lg">U</span>
           </div>
           <CardTitle className="font-display text-2xl">Create Account</CardTitle>
           <CardDescription>Start investing with UNI today</CardDescription>
@@ -46,21 +46,21 @@ export default function Signup() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="John Doe" />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="John Doe" className="h-11" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" className="h-11" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="h-11" />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-11 rounded-full shadow-lg shadow-primary/25" disabled={loading}>
               {loading ? "Creating..." : "Create Account"}
             </Button>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
+          <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an account?{" "}
             <Link to="/login" className="text-primary hover:underline font-medium">Log in</Link>
           </p>
