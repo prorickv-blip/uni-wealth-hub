@@ -80,6 +80,7 @@ export default function Index() {
             <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
           </nav>
           <div className="hidden sm:flex items-center gap-3">
+            <ThemeToggle />
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login">Log In</Link>
             </Button>
