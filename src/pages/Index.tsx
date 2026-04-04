@@ -88,7 +88,9 @@ export default function Index() {
               <Link to="/signup">Get Started</Link>
             </Button>
           </div>
-          <button className="sm:hidden p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <div className="flex sm:hidden items-center gap-1">
+            <ThemeToggle />
+            <button className="p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
