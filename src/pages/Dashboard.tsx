@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "@/hooks/useLocation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,22 +10,26 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Wallet, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Copy, LogOut, User, History, Share2, ShieldCheck, DollarSign, Activity, MessageSquare, Users as UsersIcon, Newspaper } from "lucide-react";
+import { Wallet, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Copy, LogOut, User, History, Share2, ShieldCheck, DollarSign, Activity, MessageSquare, Users as UsersIcon, Newspaper, AlertTriangle, Phone, Globe } from "lucide-react";
 import ChatPanel from "@/components/ChatPanel";
 import SupportBubble from "@/components/SupportBubble";
 import NotificationBell from "@/components/NotificationBell";
 import UpdatesFeed from "@/components/UpdatesFeed";
 
 const WALLET_ADDRESS = "TH7aGzdMyxViEjo7nk7aRdkr6U171r8m12";
+const AIRTEL_MERCHANT_ID = "7055987";
 
 export default function Dashboard() {
   const { user, loading, signOut, isAdmin } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [profitLogs, setProfitLogs] = useState<any[]>([]);
 
+  const [paymentMethod, setPaymentMethod] = useState<"usdt_trc20" | "airtel_money">("usdt_trc20");
+  const [currency, setCurrency] = useState<"USD" | "UGX">("USD");
   const [depositAmount, setDepositAmount] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
@@ -35,6 +40,12 @@ export default function Dashboard() {
 
   const [editName, setEditName] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (!location.loading) {
+      setCurrency(location.currency);
+    }
+  }, [location.loading, location.currency]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -60,7 +71,12 @@ export default function Dashboard() {
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(depositAmount);
-    if (isNaN(amt) || amt < 10) { toast.error("Minimum deposit is $10"); return; }
+    if (paymentMethod === "usdt_trc20") {
+      if (isNaN(amt) || amt < 10) { toast.error("Minimum deposit is $10"); return; }
+    } else {
+      if (isNaN(amt) || amt < 38000) { toast.error("Minimum Airtel deposit is UGX 38,000"); return; }
+      if (amt > 3000000) { toast.error("Maximum Airtel deposit is UGX 3,000,000"); return; }
+    }
     if (!screenshot) { toast.error("Please upload a screenshot"); return; }
     setSubmittingDeposit(true);
     const ext = screenshot.name.split(".").pop();
@@ -68,7 +84,14 @@ export default function Dashboard() {
     const { error: upErr } = await supabase.storage.from("deposit-screenshots").upload(path, screenshot);
     if (upErr) { toast.error("Failed to upload screenshot"); setSubmittingDeposit(false); return; }
     const { data: { publicUrl } } = supabase.storage.from("deposit-screenshots").getPublicUrl(path);
-    const { error } = await supabase.from("deposit_requests").insert({ user_id: user!.id, amount: amt, screenshot_url: publicUrl, status: "pending" });
+    const { error } = await supabase.from("deposit_requests").insert({
+      user_id: user!.id,
+      amount: amt,
+      screenshot_url: publicUrl,
+      status: "pending",
+      payment_method: paymentMethod,
+      currency: paymentMethod === "airtel_money" ? "UGX" : currency,
+    });
     setSubmittingDeposit(false);
     if (error) toast.error(error.message);
     else { toast.success("Deposit submitted for approval!"); setDepositAmount(""); setScreenshot(null); fetchData(); }
@@ -200,35 +223,179 @@ export default function Dashboard() {
             </TabsList>
           </div>
 
+          {/* Deposit Tab */}
           <TabsContent value="deposit">
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="font-display text-lg">Make a Deposit</CardTitle>
-                <p className="text-sm text-muted-foreground">Send USDT TRC20 and submit proof for approval.</p>
+                <p className="text-sm text-muted-foreground">Choose your payment method and submit proof for approval.</p>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleDeposit} className="space-y-4 max-w-lg">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Amount (USDT, min $10)</Label>
-                    <Input type="number" min="10" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="10.00" required className="h-10" />
+              <CardContent className="space-y-5">
+                {/* Payment Method Selection */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Payment Method</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod("usdt_trc20"); setCurrency("USD"); }}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "usdt_trc20" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Globe className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">USDT (TRC20)</p>
+                          <p className="text-xs text-muted-foreground">Crypto — Available worldwide</p>
+                        </div>
+                      </div>
+                    </button>
+                    {location.isUganda && (
+                      <button
+                        type="button"
+                        onClick={() => { setPaymentMethod("airtel_money"); setCurrency("UGX"); }}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "airtel_money" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                            <Phone className="h-5 w-5 text-red-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">Airtel Money</p>
+                            <p className="text-xs text-muted-foreground">Uganda only — UGX</p>
+                          </div>
+                        </div>
+                      </button>
+                    )}
                   </div>
-                  <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Send USDT TRC20 to this address:</p>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs bg-background p-2.5 rounded-lg flex-1 break-all border border-border font-mono">{WALLET_ADDRESS}</code>
-                      <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(WALLET_ADDRESS); toast.success("Copied!"); }}>
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
+                </div>
+
+                {/* Currency Toggle */}
+                {paymentMethod === "usdt_trc20" && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-medium">Currency:</Label>
+                    <div className="flex rounded-lg border border-border overflow-hidden">
+                      <button type="button" onClick={() => setCurrency("USD")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${currency === "USD" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>USD</button>
+                      <button type="button" onClick={() => setCurrency("UGX")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${currency === "UGX" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>UGX</button>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Payment Screenshot</Label>
-                    <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-10" />
-                  </div>
-                  <Button type="submit" disabled={submittingDeposit} className="rounded-full px-6 h-10">
-                    {submittingDeposit ? "Submitting..." : "Submit Deposit"}
-                  </Button>
-                </form>
+                )}
+
+                {/* USDT TRC20 Flow */}
+                {paymentMethod === "usdt_trc20" && (
+                  <form onSubmit={handleDeposit} className="space-y-4 max-w-lg">
+                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                          <strong>Warning:</strong> You must send using USDT TRON Network (TRC20) only. Sending via the wrong network may result in permanent loss of funds.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Amount ({currency}, min {currency === "USD" ? "$10" : "UGX 38,000"})</Label>
+                      <Input type="number" min={currency === "USD" ? "10" : "38000"} step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder={currency === "USD" ? "10.00" : "38000"} required className="h-10" />
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Send USDT TRC20 to this address:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-background p-2.5 rounded-lg flex-1 break-all border border-border font-mono">{WALLET_ADDRESS}</code>
+                        <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(WALLET_ADDRESS); toast.success("Copied!"); }}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-3">
+                      <p className="text-xs font-semibold">Steps:</p>
+                      <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                        <li>Copy the wallet address above</li>
+                        <li>Open your crypto wallet (e.g., Binance, Trust Wallet)</li>
+                        <li>Select Send → Paste the wallet address</li>
+                        <li>Ensure network = <strong>TRC20</strong></li>
+                        <li>Enter amount and confirm transaction</li>
+                        <li>Take a screenshot of the full transaction (must include time)</li>
+                        <li>Upload the screenshot below and submit</li>
+                      </ol>
+                    </div>
+
+                    {/* Crypto Help */}
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+                      <p className="text-xs font-semibold">📹 How to Transfer USDT from Binance</p>
+                      <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                        <iframe src="https://www.youtube.com/embed/SZZoZ0zmk8w" className="w-full h-full" allowFullScreen title="USDT Transfer Guide" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Need more help? Talk to us, we reply immediately.</p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Payment Screenshot</Label>
+                      <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-10" />
+                    </div>
+                    <Button type="submit" disabled={submittingDeposit} className="rounded-full px-6 h-10">
+                      {submittingDeposit ? "Submitting..." : "Submit Deposit"}
+                    </Button>
+                  </form>
+                )}
+
+                {/* Airtel Money Flow */}
+                {paymentMethod === "airtel_money" && (
+                  <form onSubmit={handleDeposit} className="space-y-4 max-w-lg">
+                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-amber-700 dark:text-amber-400 space-y-1">
+                          <p><strong>Minimum deposit:</strong> UGX 38,000</p>
+                          <p><strong>Maximum deposit:</strong> UGX 3,000,000</p>
+                          <p>Only available for users in Uganda.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Amount (UGX, min 38,000 — max 3,000,000)</Label>
+                      <Input type="number" min="38000" max="3000000" step="1" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="38000" required className="h-10" />
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Merchant ID:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="text-lg bg-background p-2.5 rounded-lg flex-1 text-center border border-border font-mono font-bold">{AIRTEL_MERCHANT_ID}</code>
+                        <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(AIRTEL_MERCHANT_ID); toast.success("Merchant ID copied!"); }}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-3">
+                      <p className="text-xs font-semibold">Steps:</p>
+                      <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                        <li>Copy Merchant ID: <strong>{AIRTEL_MERCHANT_ID}</strong></li>
+                        <li>Dial <strong>*185*9#</strong> on your phone</li>
+                        <li>Enter Merchant ID</li>
+                        <li>Enter amount (minimum UGX 38,000)</li>
+                        <li>Enter a reference (e.g., your name)</li>
+                        <li>Confirm using your Airtel Money PIN</li>
+                        <li>Take a screenshot including transaction ID</li>
+                        <li>Upload the screenshot below and submit</li>
+                      </ol>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                      <p className="text-xs text-muted-foreground">Need more help? Talk to us, we reply immediately.</p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Payment Screenshot</Label>
+                      <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-10" />
+                    </div>
+                    <Button type="submit" disabled={submittingDeposit} className="rounded-full px-6 h-10">
+                      {submittingDeposit ? "Submitting..." : "Submit Deposit"}
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -266,8 +433,8 @@ export default function Dashboard() {
                     {deposits.map((d) => (
                       <div key={d.id} className="flex items-center justify-between py-3">
                         <div>
-                          <p className="font-semibold text-sm">${Number(d.amount).toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</p>
+                          <p className="font-semibold text-sm">{d.currency === "UGX" ? `UGX ${Number(d.amount).toLocaleString()}` : `$${Number(d.amount).toFixed(2)}`}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString()} • {d.payment_method === "airtel_money" ? "Airtel Money" : "USDT TRC20"}</p>
                         </div>
                         <Badge variant={statusColor(d.status)} className="text-[10px]">{d.status}</Badge>
                       </div>
