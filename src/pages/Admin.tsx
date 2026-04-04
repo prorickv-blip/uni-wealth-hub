@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AdminSupportChats from "@/components/AdminSupportChats";
 import ChatPanel from "@/components/ChatPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Admin() {
   const { user, loading, isAdmin, signOut } = useAuth();
@@ -34,6 +35,11 @@ export default function Admin() {
   const [platformName, setPlatformName] = useState("UNI");
   const [primaryColor, setPrimaryColor] = useState("#3B82F6");
   const [gradientColor, setGradientColor] = useState("#4338CA");
+  const [walletAddress, setWalletAddress] = useState("TH7aGzdMyxViEjo7nk7aRdkr6U171r8m12");
+  const [airtelMerchantId, setAirtelMerchantId] = useState("7055987");
+  const [airtelDialCode, setAirtelDialCode] = useState("*185*9#");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [iconUrl, setIconUrl] = useState("");
 
   // Updates
   const [updates, setUpdates] = useState<any[]>([]);
@@ -78,13 +84,17 @@ export default function Admin() {
     setNotifications(notifs || []);
     setInquiries(inq || []);
 
-    // Load platform settings
     const { data: settings } = await supabase.from("platform_settings").select("*");
     if (settings) {
       for (const s of settings) {
         if (s.key === "platform_name") setPlatformName(s.value);
         if (s.key === "primary_color") setPrimaryColor(s.value);
         if (s.key === "gradient_color") setGradientColor(s.value);
+        if (s.key === "wallet_address") setWalletAddress(s.value);
+        if (s.key === "airtel_merchant_id") setAirtelMerchantId(s.value);
+        if (s.key === "airtel_dial_code") setAirtelDialCode(s.value);
+        if (s.key === "logo_url") setLogoUrl(s.value);
+        if (s.key === "icon_url") setIconUrl(s.value);
       }
     }
   };
@@ -144,13 +154,27 @@ export default function Admin() {
     toast.success("User updated"); setAdjustUserId(""); setAdjustDeposits(""); setAdjustProfits(""); fetchAll();
   };
 
+  const upsertSetting = async (key: string, value: string) => {
+    const { data } = await supabase.from("platform_settings").select("id").eq("key", key).maybeSingle();
+    if (data) {
+      await supabase.from("platform_settings").update({ value }).eq("key", key);
+    } else {
+      await supabase.from("platform_settings").insert({ key, value });
+    }
+  };
+
   const savePlatformSettings = async () => {
     await Promise.all([
-      supabase.from("platform_settings").update({ value: platformName }).eq("key", "platform_name"),
-      supabase.from("platform_settings").update({ value: primaryColor }).eq("key", "primary_color"),
-      supabase.from("platform_settings").update({ value: gradientColor }).eq("key", "gradient_color"),
+      upsertSetting("platform_name", platformName),
+      upsertSetting("primary_color", primaryColor),
+      upsertSetting("gradient_color", gradientColor),
+      upsertSetting("wallet_address", walletAddress),
+      upsertSetting("airtel_merchant_id", airtelMerchantId),
+      upsertSetting("airtel_dial_code", airtelDialCode),
+      upsertSetting("logo_url", logoUrl),
+      upsertSetting("icon_url", iconUrl),
     ]);
-    toast.success("Platform settings saved!");
+    toast.success("All settings saved!");
   };
 
   const publishUpdate = async () => {
@@ -203,20 +227,21 @@ export default function Admin() {
             <Button variant="ghost" size="sm" className="h-8" asChild><Link to="/dashboard"><ArrowLeft className="h-4 w-4" /></Link></Button>
             <span className="font-display font-bold text-base">Admin Panel</span>
           </div>
-          <Button variant="ghost" size="sm" className="h-8" onClick={signOut}><LogOut className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline text-xs">Sign Out</span></Button>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" className="h-8" onClick={signOut}><LogOut className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline text-xs">Sign Out</span></Button>
+          </div>
         </div>
       </header>
 
       <main className="container py-6 space-y-6 px-4 sm:px-6 max-w-6xl">
-        {/* Overview Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card><CardContent className="p-4"><div className="flex items-center justify-between mb-2"><span className="text-xs text-muted-foreground">Total Users</span><Users className="h-4 w-4 text-primary" /></div><p className="text-2xl font-display font-bold">{users.length}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><div className="flex items-center justify-between mb-2"><span className="text-xs text-muted-foreground">Total Deposits</span><DollarSign className="h-4 w-4 text-blue-500" /></div><p className="text-2xl font-display font-bold">${totalDeposits.toFixed(2)}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><div className="flex items-center justify-between mb-2"><span className="text-xs text-muted-foreground">Total Deposits</span><DollarSign className="h-4 w-4 text-primary" /></div><p className="text-2xl font-display font-bold">${totalDeposits.toFixed(2)}</p></CardContent></Card>
           <Card><CardContent className="p-4"><div className="flex items-center justify-between mb-2"><span className="text-xs text-muted-foreground">Total Profits</span><TrendingUp className="h-4 w-4 text-emerald-500" /></div><p className="text-2xl font-display font-bold text-emerald-600">${totalProfits.toFixed(2)}</p></CardContent></Card>
           <Card><CardContent className="p-4"><div className="flex items-center justify-between mb-2"><span className="text-xs text-muted-foreground">Security Alerts</span><ShieldAlert className="h-4 w-4 text-amber-500" /></div><p className="text-2xl font-display font-bold">{failedLogins}</p><p className="text-[10px] text-muted-foreground">{lockedUsers} locked accounts</p></CardContent></Card>
         </div>
 
-        {/* Distribute */}
         <Card className="border-primary/20">
           <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
@@ -380,14 +405,29 @@ export default function Admin() {
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-4">
+          <TabsContent value="settings" className="mt-4 space-y-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> Platform Configuration</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> Branding & Appearance</CardTitle></CardHeader>
               <CardContent className="space-y-4 max-w-lg">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Platform Name</Label>
                   <Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} className="h-10" />
                 </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Logo URL (full size logo)</Label>
+                  <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">App Icon URL (small square icon)</Label>
+                  <Input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="https://..." className="h-10" />
+                </div>
+                {(iconUrl || logoUrl) && (
+                  <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border border-border">
+                    {iconUrl && <img src={iconUrl} alt="Icon preview" className="h-10 w-10 rounded-lg object-cover border border-border" />}
+                    {logoUrl && <img src={logoUrl} alt="Logo preview" className="h-10 object-contain" />}
+                    <span className="text-xs text-muted-foreground">Preview</span>
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Primary Color</Label>
                   <div className="flex gap-2 items-center">
@@ -403,11 +443,32 @@ export default function Admin() {
                   </div>
                 </div>
                 <div className="p-3 rounded-lg border border-border" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${gradientColor})` }}>
-                  <p className="text-white font-semibold text-sm text-center">Preview</p>
+                  <p className="text-white font-semibold text-sm text-center">Color Preview</p>
                 </div>
-                <Button onClick={savePlatformSettings} className="rounded-full px-6 h-9 text-sm">Save Settings</Button>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Payment Configuration</CardTitle></CardHeader>
+              <CardContent className="space-y-4 max-w-lg">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">USDT TRC20 Wallet Address</Label>
+                  <Input value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} className="h-10 font-mono text-xs" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Airtel Money Merchant ID</Label>
+                  <Input value={airtelMerchantId} onChange={(e) => setAirtelMerchantId(e.target.value)} className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Airtel Dial Code</Label>
+                  <Input value={airtelDialCode} onChange={(e) => setAirtelDialCode(e.target.value)} className="h-10" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button onClick={savePlatformSettings} className="rounded-full px-8 h-10 text-sm shadow-lg shadow-primary/20">
+              Save All Settings
+            </Button>
           </TabsContent>
 
           {/* Updates Tab */}
