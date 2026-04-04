@@ -73,7 +73,8 @@ export default function Index() {
             <span className="font-display font-bold text-xl tracking-tight">UNI</span>
           </div>
           <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#about" className="hover:text-foreground transition-colors">About</a>
+            <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+            <Link to="/blog" className="hover:text-foreground transition-colors">Blog</Link>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
           </nav>
