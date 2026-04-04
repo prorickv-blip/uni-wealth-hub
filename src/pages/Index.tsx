@@ -1,7 +1,14 @@
 import { Link } from "react-router-dom";
-import { Star, Shield, Users, Building, TrendingUp, DollarSign, CheckCircle, ArrowRight, BarChart3, Wallet, Menu, X } from "lucide-react";
+import { Star, Shield, Users, Building, TrendingUp, DollarSign, CheckCircle, ArrowRight, BarChart3, Wallet, Menu, X, ChevronDown, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import Footer from "@/components/Footer";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const stats = [
   { label: "Total AUM", value: "$23.5M+", icon: BarChart3 },
@@ -17,8 +24,42 @@ const steps = [
   { step: "04", title: "Withdraw", desc: "Withdraw your profits anytime", icon: DollarSign },
 ];
 
+const faqs = [
+  { q: "What is UNI?", a: "UNI is a premier real estate investment platform that allows you to earn daily returns by investing in high-value properties. Our expert team manages the portfolio while you earn passive income." },
+  { q: "How much do I need to start?", a: "You can start investing with as little as $10 in USDT TRC20. There's no maximum limit on deposits." },
+  { q: "How are profits calculated?", a: "You earn a fixed 5% daily return on your total deposits. Profits are calculated based on your deposit amount only — they do not compound." },
+  { q: "Can I withdraw my deposit?", a: "Deposits are locked in the portfolio and cannot be withdrawn. However, you can withdraw your earned profits at any time with a minimum of $15." },
+  { q: "How long does a withdrawal take?", a: "Withdrawal requests are reviewed and approved by our team, typically within 24 hours. Funds are sent to your USDT TRC20 wallet." },
+  { q: "Is my investment safe?", a: "UNI is SEC compliant and fully insured. We use institutional-grade security to protect your investment and personal data." },
+];
+
 export default function Index() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [inquiryName, setInquiryName] = useState("");
+  const [inquiryEmail, setInquiryEmail] = useState("");
+  const [inquirySubject, setInquirySubject] = useState("");
+  const [inquiryMessage, setInquiryMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleInquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inquiryName.trim() || !inquiryEmail.trim() || !inquiryMessage.trim()) {
+      toast.error("Please fill in all required fields"); return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("inquiries").insert({
+      name: inquiryName.trim(),
+      email: inquiryEmail.trim(),
+      subject: inquirySubject.trim(),
+      message: inquiryMessage.trim(),
+    });
+    setSubmitting(false);
+    if (error) toast.error("Failed to submit. Please try again.");
+    else {
+      toast.success("Your inquiry has been submitted!");
+      setInquiryName(""); setInquiryEmail(""); setInquirySubject(""); setInquiryMessage("");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -31,9 +72,11 @@ export default function Index() {
             </div>
             <span className="font-display font-bold text-xl tracking-tight">UNI</span>
           </div>
-          <p className="hidden lg:block text-xs text-muted-foreground font-medium tracking-wider uppercase">
-            #1 Real Estate Investment Platform
-          </p>
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#about" className="hover:text-foreground transition-colors">About</a>
+            <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
+            <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
+          </nav>
           <div className="hidden sm:flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login">Log In</Link>
@@ -47,7 +90,10 @@ export default function Index() {
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-border bg-background px-4 py-4 space-y-3 animate-fade-in">
+          <div className="sm:hidden border-t border-border bg-background px-4 py-4 space-y-2 animate-fade-in">
+            <a href="#about" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>About Us</a>
+            <a href="#faq" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
+            <a href="#contact" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>Contact</a>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={() => setMobileMenuOpen(false)}>
               <Link to="/login">Log In</Link>
             </Button>
@@ -85,28 +131,15 @@ export default function Index() {
       {/* Trust */}
       <section className="py-12 sm:py-16 border-y border-border bg-muted/30">
         <div className="container px-4 sm:px-6">
-          <p className="text-center text-xs text-muted-foreground font-medium tracking-widest uppercase mb-8">
-            Trusted Worldwide
-          </p>
+          <p className="text-center text-xs text-muted-foreground font-medium tracking-widest uppercase mb-8">Trusted Worldwide</p>
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-6 sm:gap-12 lg:gap-16">
             <div className="flex items-center justify-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 fill-gold text-gold" />
-              ))}
+              {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 fill-gold text-gold" />)}
               <span className="ml-2 text-sm font-semibold">5.0</span>
             </div>
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="font-medium">SEC Compliant</span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <Users className="h-4 w-4 text-primary" />
-              <span className="font-medium">102,000+ Investors</span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <Building className="h-4 w-4 text-primary" />
-              <span className="font-medium">Real Estate in Beijing</span>
-            </div>
+            <div className="flex items-center justify-center gap-2 text-sm"><Shield className="h-4 w-4 text-primary" /><span className="font-medium">SEC Compliant</span></div>
+            <div className="flex items-center justify-center gap-2 text-sm"><Users className="h-4 w-4 text-primary" /><span className="font-medium">102,000+ Investors</span></div>
+            <div className="flex items-center justify-center gap-2 text-sm"><Building className="h-4 w-4 text-primary" /><span className="font-medium">Real Estate in Beijing</span></div>
           </div>
         </div>
       </section>
@@ -131,12 +164,8 @@ export default function Index() {
       {/* How It Works */}
       <section className="py-16 sm:py-24 bg-muted/30 border-y border-border">
         <div className="container px-4 sm:px-6">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-4">
-            How It Works
-          </h2>
-          <p className="text-muted-foreground text-center mb-14 max-w-lg mx-auto">
-            Start earning in minutes with our simple 4-step process.
-          </p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-4">How It Works</h2>
+          <p className="text-muted-foreground text-center mb-14 max-w-lg mx-auto">Start earning in minutes with our simple 4-step process.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((s) => (
               <div key={s.step} className="relative p-6 rounded-2xl bg-card border border-border group hover:border-primary/40 hover:shadow-lg transition-all">
@@ -152,8 +181,87 @@ export default function Index() {
         </div>
       </section>
 
+      {/* About Us */}
+      <section id="about" className="py-16 sm:py-24 scroll-mt-20">
+        <div className="container px-4 sm:px-6 max-w-4xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-4">About Us</h2>
+          <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">Learn more about UNI and our mission.</p>
+          <div className="grid sm:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="font-display font-semibold text-xl">Our Mission</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                UNI was founded to democratize real estate investment. We believe everyone deserves access to high-value property portfolios, regardless of their starting capital. By leveraging technology and expert management, we deliver consistent daily returns to our growing community of investors.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-display font-semibold text-xl">Why Choose UNI?</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> SEC compliant & fully insured investments</li>
+                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Expert-managed premium real estate portfolio</li>
+                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Guaranteed 5% daily returns on deposits</li>
+                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Withdraw profits anytime, no lock-in period</li>
+                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Over 102,000 active investors worldwide</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-16 sm:py-24 bg-muted/30 border-y border-border scroll-mt-20">
+        <div className="container px-4 sm:px-6 max-w-3xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-4">Frequently Asked Questions</h2>
+          <p className="text-muted-foreground text-center mb-10">Everything you need to know about UNI.</p>
+          <div className="space-y-3">
+            {faqs.map((faq, i) => (
+              <Collapsible key={i}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-xl bg-card border border-border text-left hover:border-primary/30 transition-colors group">
+                  <span className="font-medium text-sm pr-4">{faq.q}</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0 group-data-[state=open]:rotate-180 transition-transform" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="px-4 pb-4 pt-2 text-sm text-muted-foreground leading-relaxed">
+                  {faq.a}
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact / Inquiry */}
+      <section id="contact" className="py-16 sm:py-24 scroll-mt-20">
+        <div className="container px-4 sm:px-6 max-w-2xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-4">Get In Touch</h2>
+          <p className="text-muted-foreground text-center mb-10">Have a question? We'd love to hear from you.</p>
+          <form onSubmit={handleInquiry} className="space-y-4 p-6 sm:p-8 rounded-2xl bg-card border border-border">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Name *</Label>
+                <Input value={inquiryName} onChange={(e) => setInquiryName(e.target.value)} placeholder="Your name" required className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Email *</Label>
+                <Input type="email" value={inquiryEmail} onChange={(e) => setInquiryEmail(e.target.value)} placeholder="you@example.com" required className="h-10" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Subject</Label>
+              <Input value={inquirySubject} onChange={(e) => setInquirySubject(e.target.value)} placeholder="What's this about?" className="h-10" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Message *</Label>
+              <Textarea value={inquiryMessage} onChange={(e) => setInquiryMessage(e.target.value)} placeholder="Your message..." required rows={4} />
+            </div>
+            <Button type="submit" disabled={submitting} className="rounded-full px-6 h-10">
+              <Send className="h-4 w-4 mr-2" />
+              {submitting ? "Sending..." : "Send Message"}
+            </Button>
+          </form>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="py-16 sm:py-24">
+      <section className="py-16 sm:py-24 bg-muted/30 border-t border-border">
         <div className="container px-4 sm:px-6 text-center">
           <div className="max-w-2xl mx-auto p-10 sm:p-14 rounded-3xl gradient-primary text-primary-foreground shadow-2xl shadow-primary/20">
             <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">Ready to Start Earning?</h2>
@@ -165,18 +273,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 border-t border-border">
-        <div className="container flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-xs">U</span>
-            </div>
-            <span className="font-display font-semibold text-foreground">UNI</span>
-          </div>
-          <p>© 2026 UNI Investment Platform. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

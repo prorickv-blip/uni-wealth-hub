@@ -71,6 +71,153 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          status?: string
+          subject?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          is_read: boolean
+          message: string
+          target: string
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_read?: boolean
+          message: string
+          target?: string
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_read?: boolean
+          message?: string
+          target?: string
+          target_user_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      platform_updates: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          published: boolean
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published?: boolean
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published?: boolean
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -78,6 +225,8 @@ export type Database = {
           deposits: number
           email: string
           id: string
+          is_flagged: boolean
+          is_locked: boolean
           name: string
           profits: number
           referral_code: string
@@ -90,6 +239,8 @@ export type Database = {
           deposits?: number
           email?: string
           id?: string
+          is_flagged?: boolean
+          is_locked?: boolean
           name?: string
           profits?: number
           referral_code?: string
@@ -102,6 +253,8 @@ export type Database = {
           deposits?: number
           email?: string
           id?: string
+          is_flagged?: boolean
+          is_locked?: boolean
           name?: string
           profits?: number
           referral_code?: string
