@@ -92,7 +92,8 @@ export default function Index() {
             <ThemeToggle />
             <button className="p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            </button>
+          </div>
         </div>
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-border bg-background px-4 py-4 space-y-2 animate-fade-in">
