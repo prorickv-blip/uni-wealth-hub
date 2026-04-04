@@ -20,7 +20,6 @@ export default function Admin() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [distributing, setDistributing] = useState(false);
 
-  // Manual adjust
   const [adjustUserId, setAdjustUserId] = useState("");
   const [adjustDeposits, setAdjustDeposits] = useState("");
   const [adjustProfits, setAdjustProfits] = useState("");
@@ -96,78 +95,77 @@ export default function Admin() {
 
   const getUserEmail = (userId: string) => users.find(u => u.user_id === userId)?.email || userId.slice(0, 8);
 
-  if (loading || !isAdmin) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
+  if (loading || !isAdmin) return <div className="min-h-screen flex items-center justify-center bg-muted/30"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container flex h-14 items-center justify-between">
+    <div className="min-h-screen bg-muted/30">
+      <header className="border-b border-border bg-background sticky top-0 z-40">
+        <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild><Link to="/dashboard"><ArrowLeft className="h-4 w-4" /></Link></Button>
-            <span className="font-display font-bold">Admin Panel</span>
+            <Button variant="ghost" size="sm" className="rounded-lg" asChild><Link to="/dashboard"><ArrowLeft className="h-4 w-4" /></Link></Button>
+            <span className="font-display font-bold text-lg">Admin Panel</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="h-4 w-4 mr-1" /> Sign Out</Button>
+          <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Sign Out</span></Button>
         </div>
       </header>
 
-      <main className="container py-8 space-y-6">
+      <main className="container py-6 sm:py-8 space-y-6 px-4 sm:px-6">
         {/* Distribute profits */}
-        <Card className="border-primary/30">
+        <Card className="border-primary/20 shadow-sm">
           <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-display font-semibold text-lg flex items-center gap-2"><Zap className="h-5 w-5 text-gold" /> Daily Profit Distribution</h3>
+              <h3 className="font-display font-semibold text-lg flex items-center gap-2"><Zap className="h-5 w-5 text-primary" /> Daily Profit Distribution</h3>
               <p className="text-sm text-muted-foreground">Adds 5% of each user's deposits to their profits</p>
             </div>
-            <Button onClick={distributeProfits} disabled={distributing} className="gradient-gold border-0">
+            <Button onClick={distributeProfits} disabled={distributing} className="rounded-full px-6 shadow-lg shadow-primary/25">
               {distributing ? "Distributing..." : "Distribute Daily Profit"}
             </Button>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="users">
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
-            <TabsTrigger value="users"><Users className="h-4 w-4 mr-1" /> Users</TabsTrigger>
-            <TabsTrigger value="deposits"><ArrowDownToLine className="h-4 w-4 mr-1" /> Deposits</TabsTrigger>
-            <TabsTrigger value="withdrawals"><ArrowUpFromLine className="h-4 w-4 mr-1" /> Withdrawals</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full max-w-md h-auto p-1">
+            <TabsTrigger value="users" className="py-2"><Users className="h-4 w-4 mr-1" /> Users</TabsTrigger>
+            <TabsTrigger value="deposits" className="py-2"><ArrowDownToLine className="h-4 w-4 mr-1" /> Deposits</TabsTrigger>
+            <TabsTrigger value="withdrawals" className="py-2"><ArrowUpFromLine className="h-4 w-4 mr-1" /> Withdrawals</TabsTrigger>
           </TabsList>
 
-          {/* Users */}
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value="users" className="space-y-4 mt-6">
             {users.map((u) => (
-              <Card key={u.id}>
+              <Card key={u.id} className="shadow-sm">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="font-semibold">{u.name || "No name"}</p>
-                      <p className="text-sm text-muted-foreground">{u.email}</p>
-                      <div className="flex gap-4 text-sm">
+                    <div className="space-y-1 min-w-0">
+                      <p className="font-semibold truncate">{u.name || "No name"}</p>
+                      <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                      <div className="flex flex-wrap gap-4 text-sm">
                         <span>Deposits: <strong>${Number(u.deposits).toFixed(2)}</strong></span>
                         <span>Profits: <strong className="text-primary">${Number(u.profits).toFixed(2)}</strong></span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => { setAdjustUserId(u.user_id); setAdjustDeposits(String(u.deposits)); setAdjustProfits(String(u.profits)); }}>
+                          <Button variant="outline" size="sm" className="rounded-lg" onClick={() => { setAdjustUserId(u.user_id); setAdjustDeposits(String(u.deposits)); setAdjustProfits(String(u.profits)); }}>
                             Edit
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
-                          <DialogHeader><DialogTitle>Adjust {u.email}</DialogTitle></DialogHeader>
+                          <DialogHeader><DialogTitle className="font-display">Adjust {u.email}</DialogTitle></DialogHeader>
                           <div className="space-y-4">
                             <div className="space-y-2">
                               <Label>Deposits</Label>
-                              <Input type="number" step="0.01" value={adjustDeposits} onChange={(e) => setAdjustDeposits(e.target.value)} />
+                              <Input type="number" step="0.01" value={adjustDeposits} onChange={(e) => setAdjustDeposits(e.target.value)} className="h-11" />
                             </div>
                             <div className="space-y-2">
                               <Label>Profits</Label>
-                              <Input type="number" step="0.01" value={adjustProfits} onChange={(e) => setAdjustProfits(e.target.value)} />
+                              <Input type="number" step="0.01" value={adjustProfits} onChange={(e) => setAdjustProfits(e.target.value)} className="h-11" />
                             </div>
-                            <Button onClick={handleAdjust}>Save</Button>
+                            <Button onClick={handleAdjust} className="rounded-full px-6">Save</Button>
                           </div>
                         </DialogContent>
                       </Dialog>
-                      <Button variant="destructive" size="sm" onClick={() => deleteUser(u.user_id)}><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="destructive" size="sm" className="rounded-lg" onClick={() => deleteUser(u.user_id)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </div>
                 </CardContent>
@@ -175,14 +173,13 @@ export default function Admin() {
             ))}
           </TabsContent>
 
-          {/* Deposits */}
-          <TabsContent value="deposits" className="space-y-4">
+          <TabsContent value="deposits" className="space-y-4 mt-6">
             {deposits.map((d) => (
-              <Card key={d.id}>
+              <Card key={d.id} className="shadow-sm">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">{getUserEmail(d.user_id)}</p>
+                    <div className="space-y-1 min-w-0">
+                      <p className="text-sm text-muted-foreground truncate">{getUserEmail(d.user_id)}</p>
                       <p className="font-semibold text-lg">${Number(d.amount).toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()}</p>
                       {d.screenshot_url && (
@@ -191,12 +188,12 @@ export default function Admin() {
                         </a>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge variant={d.status === "approved" ? "default" : d.status === "rejected" ? "destructive" : "secondary"}>{d.status}</Badge>
                       {d.status === "pending" && (
                         <>
-                          <Button size="sm" onClick={() => approveDeposit(d)}>Approve</Button>
-                          <Button size="sm" variant="destructive" onClick={() => rejectDeposit(d.id)}>Reject</Button>
+                          <Button size="sm" className="rounded-lg" onClick={() => approveDeposit(d)}>Approve</Button>
+                          <Button size="sm" variant="destructive" className="rounded-lg" onClick={() => rejectDeposit(d.id)}>Reject</Button>
                         </>
                       )}
                     </div>
@@ -207,21 +204,20 @@ export default function Admin() {
             {deposits.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No deposit requests.</p>}
           </TabsContent>
 
-          {/* Withdrawals */}
-          <TabsContent value="withdrawals" className="space-y-4">
+          <TabsContent value="withdrawals" className="space-y-4 mt-6">
             {withdrawals.map((w) => (
-              <Card key={w.id}>
+              <Card key={w.id} className="shadow-sm">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">{getUserEmail(w.user_id)}</p>
+                    <div className="space-y-1 min-w-0">
+                      <p className="text-sm text-muted-foreground truncate">{getUserEmail(w.user_id)}</p>
                       <p className="font-semibold text-lg">${Number(w.amount).toFixed(2)}</p>
-                      <p className="text-xs font-mono text-muted-foreground">{w.wallet_address}</p>
+                      <p className="text-xs font-mono text-muted-foreground truncate">{w.wallet_address}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge variant={w.status === "approved" ? "default" : "secondary"}>{w.status}</Badge>
                       {w.status === "pending" && (
-                        <Button size="sm" onClick={() => approveWithdrawal(w)}>Approve</Button>
+                        <Button size="sm" className="rounded-lg" onClick={() => approveWithdrawal(w)}>Approve</Button>
                       )}
                     </div>
                   </div>
