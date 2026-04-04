@@ -73,7 +73,8 @@ export default function Index() {
             <span className="font-display font-bold text-xl tracking-tight">UNI</span>
           </div>
           <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#about" className="hover:text-foreground transition-colors">About</a>
+            <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+            <Link to="/blog" className="hover:text-foreground transition-colors">Blog</Link>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
           </nav>
@@ -91,7 +92,8 @@ export default function Index() {
         </div>
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-border bg-background px-4 py-4 space-y-2 animate-fade-in">
-            <a href="#about" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>About Us</a>
+            <Link to="/about" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+            <Link to="/blog" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
             <a href="#faq" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
             <a href="#contact" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>Contact</a>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={() => setMobileMenuOpen(false)}>
@@ -181,29 +183,14 @@ export default function Index() {
         </div>
       </section>
 
-      {/* About Us */}
-      <section id="about" className="py-16 sm:py-24 scroll-mt-20">
-        <div className="container px-4 sm:px-6 max-w-4xl mx-auto">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-center mb-4">About Us</h2>
-          <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">Learn more about UNI and our mission.</p>
-          <div className="grid sm:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h3 className="font-display font-semibold text-xl">Our Mission</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                UNI was founded to democratize real estate investment. We believe everyone deserves access to high-value property portfolios, regardless of their starting capital. By leveraging technology and expert management, we deliver consistent daily returns to our growing community of investors.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <h3 className="font-display font-semibold text-xl">Why Choose UNI?</h3>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> SEC compliant & fully insured investments</li>
-                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Expert-managed premium real estate portfolio</li>
-                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Guaranteed 5% daily returns on deposits</li>
-                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Withdraw profits anytime, no lock-in period</li>
-                <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" /> Over 102,000 active investors worldwide</li>
-              </ul>
-            </div>
-          </div>
+      {/* About Us CTA */}
+      <section className="py-16 sm:py-24 scroll-mt-20">
+        <div className="container px-4 sm:px-6 max-w-4xl mx-auto text-center">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">About Us</h2>
+          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">Learn about our mission, team, and what makes UNI the trusted choice for real estate investment.</p>
+          <Button variant="outline" size="lg" className="rounded-full px-8" asChild>
+            <Link to="/about">Learn More <ArrowRight className="ml-2 h-4 w-4" /></Link>
+          </Button>
         </div>
       </section>
 
