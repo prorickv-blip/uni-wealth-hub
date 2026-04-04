@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "@/hooks/useLocation";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,13 +16,12 @@ import ChatPanel from "@/components/ChatPanel";
 import SupportBubble from "@/components/SupportBubble";
 import NotificationBell from "@/components/NotificationBell";
 import UpdatesFeed from "@/components/UpdatesFeed";
-
-const WALLET_ADDRESS = "TH7aGzdMyxViEjo7nk7aRdkr6U171r8m12";
-const AIRTEL_MERCHANT_ID = "7055987";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Dashboard() {
   const { user, loading, signOut, isAdmin } = useAuth();
   const location = useLocation();
+  const platform = usePlatformSettings();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [deposits, setDeposits] = useState<any[]>([]);
@@ -44,8 +44,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (!location.loading) {
       setCurrency(location.currency);
+      if (location.isUganda) setPaymentMethod("usdt_trc20");
     }
-  }, [location.loading, location.currency]);
+  }, [location.loading, location.currency, location.isUganda]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -137,17 +138,26 @@ export default function Dashboard() {
   const dailyReturn = Number(profile.deposits) * 0.05;
   const totalBalance = Number(profile.deposits) + Number(profile.profits);
 
+  const WALLET_ADDRESS = platform.wallet_address;
+  const AIRTEL_MERCHANT_ID = platform.airtel_merchant_id;
+  const AIRTEL_DIAL_CODE = platform.airtel_dial_code;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/95 backdrop-blur-lg sticky top-0 z-40">
         <div className="container flex h-14 items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-xs">U</span>
-            </div>
-            <span className="font-display font-bold text-base">UNI</span>
+            {platform.icon_url ? (
+              <img src={platform.icon_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
+            ) : (
+              <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-display font-bold text-xs">U</span>
+              </div>
+            )}
+            <span className="font-display font-bold text-base">{platform.platform_name}</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
             <NotificationBell />
             {isAdmin && (
               <Button variant="outline" size="sm" className="rounded-full text-xs h-8" asChild>
@@ -231,19 +241,13 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Choose your payment method and submit proof for approval.</p>
               </CardHeader>
               <CardContent className="space-y-5">
-                {/* Payment Method Selection */}
                 <div className="space-y-2">
                   <Label className="text-xs font-medium">Payment Method</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => { setPaymentMethod("usdt_trc20"); setCurrency("USD"); }}
-                      className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "usdt_trc20" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                    >
+                    <button type="button" onClick={() => { setPaymentMethod("usdt_trc20"); setCurrency("USD"); }}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "usdt_trc20" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Globe className="h-5 w-5 text-primary" />
-                        </div>
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><Globe className="h-5 w-5 text-primary" /></div>
                         <div>
                           <p className="font-semibold text-sm">USDT (TRC20)</p>
                           <p className="text-xs text-muted-foreground">Crypto — Available worldwide</p>
@@ -251,15 +255,10 @@ export default function Dashboard() {
                       </div>
                     </button>
                     {location.isUganda && (
-                      <button
-                        type="button"
-                        onClick={() => { setPaymentMethod("airtel_money"); setCurrency("UGX"); }}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "airtel_money" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                      >
+                      <button type="button" onClick={() => { setPaymentMethod("airtel_money"); setCurrency("UGX"); }}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "airtel_money" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-                            <Phone className="h-5 w-5 text-red-500" />
-                          </div>
+                          <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center"><Phone className="h-5 w-5 text-destructive" /></div>
                           <div>
                             <p className="font-semibold text-sm">Airtel Money</p>
                             <p className="text-xs text-muted-foreground">Uganda only — UGX</p>
@@ -270,7 +269,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Currency Toggle */}
                 {paymentMethod === "usdt_trc20" && (
                   <div className="flex items-center gap-2">
                     <Label className="text-xs font-medium">Currency:</Label>
@@ -292,12 +290,10 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium">Amount ({currency}, min {currency === "USD" ? "$10" : "UGX 38,000"})</Label>
                       <Input type="number" min={currency === "USD" ? "10" : "38000"} step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder={currency === "USD" ? "10.00" : "38000"} required className="h-10" />
                     </div>
-
                     <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
                       <p className="text-xs font-medium text-muted-foreground">Send USDT TRC20 to this address:</p>
                       <div className="flex items-center gap-2">
@@ -307,7 +303,6 @@ export default function Dashboard() {
                         </Button>
                       </div>
                     </div>
-
                     <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-3">
                       <p className="text-xs font-semibold">Steps:</p>
                       <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
@@ -320,8 +315,6 @@ export default function Dashboard() {
                         <li>Upload the screenshot below and submit</li>
                       </ol>
                     </div>
-
-                    {/* Crypto Help */}
                     <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
                       <p className="text-xs font-semibold">📹 How to Transfer USDT from Binance</p>
                       <div className="aspect-video rounded-lg overflow-hidden bg-muted">
@@ -329,7 +322,6 @@ export default function Dashboard() {
                       </div>
                       <p className="text-xs text-muted-foreground">Need more help? Talk to us, we reply immediately.</p>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium">Payment Screenshot</Label>
                       <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-10" />
@@ -353,12 +345,10 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium">Amount (UGX, min 38,000 — max 3,000,000)</Label>
                       <Input type="number" min="38000" max="3000000" step="1" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="38000" required className="h-10" />
                     </div>
-
                     <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
                       <p className="text-xs font-medium text-muted-foreground">Merchant ID:</p>
                       <div className="flex items-center gap-2">
@@ -368,12 +358,11 @@ export default function Dashboard() {
                         </Button>
                       </div>
                     </div>
-
                     <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-3">
                       <p className="text-xs font-semibold">Steps:</p>
                       <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
                         <li>Copy Merchant ID: <strong>{AIRTEL_MERCHANT_ID}</strong></li>
-                        <li>Dial <strong>*185*9#</strong> on your phone</li>
+                        <li>Dial <strong>{AIRTEL_DIAL_CODE}</strong> on your phone</li>
                         <li>Enter Merchant ID</li>
                         <li>Enter amount (minimum UGX 38,000)</li>
                         <li>Enter a reference (e.g., your name)</li>
@@ -382,11 +371,9 @@ export default function Dashboard() {
                         <li>Upload the screenshot below and submit</li>
                       </ol>
                     </div>
-
                     <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                       <p className="text-xs text-muted-foreground">Need more help? Talk to us, we reply immediately.</p>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium">Payment Screenshot</Label>
                       <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-10" />
@@ -481,9 +468,7 @@ export default function Dashboard() {
           <TabsContent value="updates">
             <Card>
               <CardHeader className="pb-3"><CardTitle className="font-display text-lg flex items-center gap-2"><Newspaper className="h-5 w-5 text-primary" /> Platform Updates</CardTitle></CardHeader>
-              <CardContent>
-                <UpdatesFeed />
-              </CardContent>
+              <CardContent><UpdatesFeed /></CardContent>
             </Card>
           </TabsContent>
 

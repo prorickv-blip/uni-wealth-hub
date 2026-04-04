@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Star, Shield, Users, Building, TrendingUp, DollarSign, CheckCircle, ArrowRight, BarChart3, Wallet, Menu, X, ChevronDown, Send } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +80,7 @@ export default function Index() {
             <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
           </nav>
           <div className="hidden sm:flex items-center gap-3">
+            <ThemeToggle />
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login">Log In</Link>
             </Button>
@@ -86,9 +88,12 @@ export default function Index() {
               <Link to="/signup">Get Started</Link>
             </Button>
           </div>
-          <button className="sm:hidden p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <div className="flex sm:hidden items-center gap-1">
+            <ThemeToggle />
+            <button className="p-2 rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            </button>
+          </div>
         </div>
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-border bg-background px-4 py-4 space-y-2 animate-fade-in">
