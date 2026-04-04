@@ -92,7 +92,8 @@ export default function Index() {
         </div>
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-border bg-background px-4 py-4 space-y-2 animate-fade-in">
-            <a href="#about" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>About Us</a>
+            <Link to="/about" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+            <Link to="/blog" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
             <a href="#faq" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
             <a href="#contact" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>Contact</a>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={() => setMobileMenuOpen(false)}>
