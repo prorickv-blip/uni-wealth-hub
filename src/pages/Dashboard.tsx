@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Wallet, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Copy, LogOut, User, History, Share2, ShieldCheck } from "lucide-react";
+import { Wallet, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Copy, LogOut, User, History, Share2, ShieldCheck, DollarSign, Activity, MessageSquare, Users as UsersIcon } from "lucide-react";
+import ChatPanel from "@/components/ChatPanel";
+import SupportBubble from "@/components/SupportBubble";
 
 const WALLET_ADDRESS = "TH7aGzdMyxViEjo7nk7aRdkr6U171r8m12";
 
@@ -59,17 +61,12 @@ export default function Dashboard() {
     if (isNaN(amt) || amt < 10) { toast.error("Minimum deposit is $10"); return; }
     if (!screenshot) { toast.error("Please upload a screenshot"); return; }
     setSubmittingDeposit(true);
-
     const ext = screenshot.name.split(".").pop();
     const path = `${user!.id}/${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("deposit-screenshots").upload(path, screenshot);
     if (upErr) { toast.error("Failed to upload screenshot"); setSubmittingDeposit(false); return; }
-
     const { data: { publicUrl } } = supabase.storage.from("deposit-screenshots").getPublicUrl(path);
-
-    const { error } = await supabase.from("deposit_requests").insert({
-      user_id: user!.id, amount: amt, screenshot_url: publicUrl, status: "pending",
-    });
+    const { error } = await supabase.from("deposit_requests").insert({ user_id: user!.id, amount: amt, screenshot_url: publicUrl, status: "pending" });
     setSubmittingDeposit(false);
     if (error) toast.error(error.message);
     else { toast.success("Deposit submitted for approval!"); setDepositAmount(""); setScreenshot(null); fetchData(); }
@@ -82,10 +79,7 @@ export default function Dashboard() {
     if (!profile || amt > profile.profits) { toast.error("Insufficient profits"); return; }
     if (!walletAddr.trim()) { toast.error("Enter wallet address"); return; }
     setSubmittingWithdraw(true);
-
-    const { error } = await supabase.from("withdrawal_requests").insert({
-      user_id: user!.id, amount: amt, wallet_address: walletAddr.trim(), status: "pending",
-    });
+    const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user!.id, amount: amt, wallet_address: walletAddr.trim(), status: "pending" });
     setSubmittingWithdraw(false);
     if (error) toast.error(error.message);
     else { toast.success("Withdrawal submitted!"); setWithdrawAmount(""); setWalletAddr(""); fetchData(); }
@@ -112,92 +106,132 @@ export default function Dashboard() {
     }
   };
 
-  if (loading || !profile) return <div className="min-h-screen flex items-center justify-center bg-muted/30"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
+  if (loading || !profile) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
 
   const statusColor = (s: string) => s === "approved" ? "default" : s === "rejected" ? "destructive" : "secondary";
+  const dailyReturn = Number(profile.deposits) * 0.05;
+  const totalBalance = Number(profile.deposits) + Number(profile.profits);
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b border-border bg-background sticky top-0 z-40">
-        <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center shadow-md">
-              <span className="text-primary-foreground font-display font-bold text-sm">U</span>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-background/95 backdrop-blur-lg sticky top-0 z-40">
+        <div className="container flex h-14 items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-display font-bold text-xs">U</span>
             </div>
-            <span className="font-display font-bold text-lg">UNI</span>
+            <span className="font-display font-bold text-base">UNI</span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             {isAdmin && (
-              <Button variant="outline" size="sm" className="rounded-full" asChild>
-                <Link to="/admin"><ShieldCheck className="h-4 w-4 mr-1" /> Admin</Link>
+              <Button variant="outline" size="sm" className="rounded-full text-xs h-8" asChild>
+                <Link to="/admin"><ShieldCheck className="h-3.5 w-3.5 mr-1" /> Admin</Link>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Sign Out</span>
+            <Button variant="ghost" size="sm" className="h-8" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline text-xs">Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container py-6 sm:py-8 space-y-6 sm:space-y-8 px-4 sm:px-6">
-        {/* Portfolio Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <Card className="shadow-sm border-border">
-            <CardContent className="pt-6 flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Wallet className="h-7 w-7 text-primary" />
+      <main className="container py-6 space-y-6 px-4 sm:px-6 max-w-6xl">
+        {/* Welcome */}
+        <div>
+          <h1 className="font-display text-2xl font-bold">Welcome back, {profile.name || "Investor"}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Here's your portfolio overview</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="border-border">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-muted-foreground font-medium">Total Balance</span>
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Total Deposits</p>
-                <p className="text-2xl sm:text-3xl font-display font-bold truncate">${Number(profile.deposits).toFixed(2)}</p>
-              </div>
+              <p className="text-xl sm:text-2xl font-display font-bold">${totalBalance.toFixed(2)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Combined portfolio value</p>
             </CardContent>
           </Card>
-          <Card className="shadow-sm border-border">
-            <CardContent className="pt-6 flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-7 w-7 text-primary" />
+          <Card className="border-border">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-muted-foreground font-medium">Deposits</span>
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Wallet className="h-4 w-4 text-blue-500" />
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Available Profits</p>
-                <p className="text-2xl sm:text-3xl font-display font-bold text-primary truncate">${Number(profile.profits).toFixed(2)}</p>
+              <p className="text-xl sm:text-2xl font-display font-bold">${Number(profile.deposits).toFixed(2)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Locked in portfolio</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-muted-foreground font-medium">Profits</span>
+                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                </div>
               </div>
+              <p className="text-xl sm:text-2xl font-display font-bold text-emerald-600">${Number(profile.profits).toFixed(2)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Available to withdraw</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-muted-foreground font-medium">Daily Return</span>
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Activity className="h-4 w-4 text-amber-500" />
+                </div>
+              </div>
+              <p className="text-xl sm:text-2xl font-display font-bold">${dailyReturn.toFixed(2)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">5% of your deposits</p>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="deposit" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl h-auto p-1">
-            <TabsTrigger value="deposit" className="text-xs sm:text-sm py-2"><ArrowDownToLine className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Deposit</span></TabsTrigger>
-            <TabsTrigger value="withdraw" className="text-xs sm:text-sm py-2"><ArrowUpFromLine className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Withdraw</span></TabsTrigger>
-            <TabsTrigger value="history" className="text-xs sm:text-sm py-2"><History className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">History</span></TabsTrigger>
-            <TabsTrigger value="profile" className="text-xs sm:text-sm py-2"><User className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Profile</span></TabsTrigger>
-            <TabsTrigger value="referral" className="text-xs sm:text-sm py-2"><Share2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Invite</span></TabsTrigger>
+        {/* Tabs */}
+        <Tabs defaultValue="deposit" className="space-y-4">
+          <TabsList className="grid grid-cols-6 w-full h-auto p-1 bg-muted/50">
+            <TabsTrigger value="deposit" className="text-xs py-2 data-[state=active]:bg-background"><ArrowDownToLine className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">Deposit</span></TabsTrigger>
+            <TabsTrigger value="withdraw" className="text-xs py-2 data-[state=active]:bg-background"><ArrowUpFromLine className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">Withdraw</span></TabsTrigger>
+            <TabsTrigger value="history" className="text-xs py-2 data-[state=active]:bg-background"><History className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">History</span></TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs py-2 data-[state=active]:bg-background"><MessageSquare className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">Chat</span></TabsTrigger>
+            <TabsTrigger value="profile" className="text-xs py-2 data-[state=active]:bg-background"><User className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">Profile</span></TabsTrigger>
+            <TabsTrigger value="referral" className="text-xs py-2 data-[state=active]:bg-background"><Share2 className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">Invite</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="deposit">
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display">Make a Deposit</CardTitle></CardHeader>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="font-display text-lg">Make a Deposit</CardTitle>
+                <p className="text-sm text-muted-foreground">Send USDT TRC20 and submit proof for approval.</p>
+              </CardHeader>
               <CardContent>
-                <form onSubmit={handleDeposit} className="space-y-4 max-w-md">
-                  <div className="space-y-2">
-                    <Label>Amount (USDT, min $10)</Label>
-                    <Input type="number" min="10" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="10.00" required className="h-11" />
+                <form onSubmit={handleDeposit} className="space-y-4 max-w-lg">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Amount (USDT, min $10)</Label>
+                    <Input type="number" min="10" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="10.00" required className="h-10" />
                   </div>
-                  <div className="p-4 rounded-xl bg-muted border border-border space-y-2">
-                    <p className="text-sm font-medium">Send USDT TRC20 to:</p>
+                  <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Send USDT TRC20 to this address:</p>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-background p-2.5 rounded-lg flex-1 break-all border border-border">{WALLET_ADDRESS}</code>
-                      <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={() => { navigator.clipboard.writeText(WALLET_ADDRESS); toast.success("Copied!"); }}>
+                      <code className="text-xs bg-background p-2.5 rounded-lg flex-1 break-all border border-border font-mono">{WALLET_ADDRESS}</code>
+                      <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(WALLET_ADDRESS); toast.success("Copied!"); }}>
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Payment Screenshot</Label>
-                    <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-11" />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Payment Screenshot</Label>
+                    <Input type="file" accept="image/*" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} required className="h-10" />
                   </div>
-                  <Button type="submit" disabled={submittingDeposit} className="rounded-full px-6">
+                  <Button type="submit" disabled={submittingDeposit} className="rounded-full px-6 h-10">
                     {submittingDeposit ? "Submitting..." : "Submit Deposit"}
                   </Button>
                 </form>
@@ -206,20 +240,22 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="withdraw">
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display">Withdraw Profits</CardTitle></CardHeader>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="font-display text-lg">Withdraw Profits</CardTitle>
+                <p className="text-sm text-muted-foreground">Available: <span className="text-emerald-600 font-semibold">${Number(profile.profits).toFixed(2)}</span></p>
+              </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Available: <span className="text-primary font-semibold">${Number(profile.profits).toFixed(2)}</span></p>
-                <form onSubmit={handleWithdraw} className="space-y-4 max-w-md">
-                  <div className="space-y-2">
-                    <Label>USDT TRC20 Wallet Address</Label>
-                    <Input value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)} placeholder="T..." required className="h-11" />
+                <form onSubmit={handleWithdraw} className="space-y-4 max-w-lg">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">USDT TRC20 Wallet Address</Label>
+                    <Input value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)} placeholder="T..." required className="h-10" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Amount (min $15)</Label>
-                    <Input type="number" min="15" step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="15.00" required className="h-11" />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Amount (min $15)</Label>
+                    <Input type="number" min="15" step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="15.00" required className="h-10" />
                   </div>
-                  <Button type="submit" disabled={submittingWithdraw} className="rounded-full px-6">
+                  <Button type="submit" disabled={submittingWithdraw} className="rounded-full px-6 h-10">
                     {submittingWithdraw ? "Submitting..." : "Submit Withdrawal"}
                   </Button>
                 </form>
@@ -227,51 +263,54 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4 sm:space-y-6">
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display text-lg">Deposits</CardTitle></CardHeader>
+          <TabsContent value="history" className="space-y-4">
+            {/* Deposits */}
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><ArrowDownToLine className="h-4 w-4 text-primary" /> Deposit History</CardTitle></CardHeader>
               <CardContent>
-                {deposits.length === 0 ? <p className="text-sm text-muted-foreground">No deposits yet.</p> : (
-                  <div className="space-y-3">
+                {deposits.length === 0 ? <p className="text-sm text-muted-foreground py-4">No deposits yet.</p> : (
+                  <div className="divide-y divide-border">
                     {deposits.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 border border-border">
+                      <div key={d.id} className="flex items-center justify-between py-3">
                         <div>
-                          <p className="font-semibold">${Number(d.amount).toFixed(2)}</p>
+                          <p className="font-semibold text-sm">${Number(d.amount).toFixed(2)}</p>
                           <p className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</p>
                         </div>
-                        <Badge variant={statusColor(d.status)}>{d.status}</Badge>
+                        <Badge variant={statusColor(d.status)} className="text-[10px]">{d.status}</Badge>
                       </div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display text-lg">Withdrawals</CardTitle></CardHeader>
+            {/* Withdrawals */}
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><ArrowUpFromLine className="h-4 w-4 text-primary" /> Withdrawal History</CardTitle></CardHeader>
               <CardContent>
-                {withdrawals.length === 0 ? <p className="text-sm text-muted-foreground">No withdrawals yet.</p> : (
-                  <div className="space-y-3">
+                {withdrawals.length === 0 ? <p className="text-sm text-muted-foreground py-4">No withdrawals yet.</p> : (
+                  <div className="divide-y divide-border">
                     {withdrawals.map((w) => (
-                      <div key={w.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 border border-border">
+                      <div key={w.id} className="flex items-center justify-between py-3">
                         <div>
-                          <p className="font-semibold">${Number(w.amount).toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">{w.wallet_address.slice(0, 10)}...</p>
+                          <p className="font-semibold text-sm">${Number(w.amount).toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{w.wallet_address.slice(0, 12)}...</p>
                         </div>
-                        <Badge variant={statusColor(w.status)}>{w.status}</Badge>
+                        <Badge variant={statusColor(w.status)} className="text-[10px]">{w.status}</Badge>
                       </div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display text-lg">Profit Logs</CardTitle></CardHeader>
+            {/* Profit Logs */}
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-emerald-500" /> Profit Distributions</CardTitle></CardHeader>
               <CardContent>
-                {profitLogs.length === 0 ? <p className="text-sm text-muted-foreground">No profit distributions yet.</p> : (
-                  <div className="space-y-3">
+                {profitLogs.length === 0 ? <p className="text-sm text-muted-foreground py-4">No profit distributions yet.</p> : (
+                  <div className="divide-y divide-border">
                     {profitLogs.map((pl) => (
-                      <div key={pl.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 border border-border">
-                        <p className="font-semibold text-primary">+${Number(pl.amount).toFixed(2)}</p>
+                      <div key={pl.id} className="flex items-center justify-between py-3">
+                        <p className="font-semibold text-sm text-emerald-600">+${Number(pl.amount).toFixed(2)}</p>
                         <p className="text-xs text-muted-foreground">{new Date(pl.created_at).toLocaleDateString()}</p>
                       </div>
                     ))}
@@ -281,37 +320,68 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="chat">
+            <Card className="overflow-hidden">
+              <div className="h-[500px]">
+                <ChatPanel
+                  channel="group"
+                  title="Investors Community"
+                  icon={<UsersIcon className="h-4 w-4 text-primary" />}
+                />
+              </div>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="profile">
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display">Edit Profile</CardTitle></CardHeader>
-              <CardContent className="space-y-4 max-w-md">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-11" />
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="font-display text-lg">Edit Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 max-w-lg">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-border">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} className="h-16 w-16 object-cover" alt="avatar" />
+                    ) : (
+                      <User className="h-7 w-7 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{profile.name || "No name set"}</p>
+                    <p className="text-xs text-muted-foreground">{profile.email}</p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Profile Picture</Label>
-                  <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} className="h-11" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Name</Label>
+                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-10" />
                 </div>
-                <Button onClick={handleProfileUpdate} className="rounded-full px-6">Save Changes</Button>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Profile Picture</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} className="h-10" />
+                </div>
+                <Button onClick={handleProfileUpdate} className="rounded-full px-6 h-10">Save Changes</Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="referral">
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="font-display">Invite Friends</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">Share your unique referral link:</p>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="font-display text-lg">Invite Friends</CardTitle>
+                <p className="text-sm text-muted-foreground">Share your unique referral link and grow the community.</p>
+              </CardHeader>
+              <CardContent className="space-y-4 max-w-lg">
                 <div className="flex items-center gap-2">
-                  <Input readOnly value={`${window.location.origin}/signup?ref=${profile.referral_code}`} className="h-11" />
-                  <Button variant="outline" onClick={copyReferral} className="rounded-lg"><Copy className="h-4 w-4" /></Button>
+                  <Input readOnly value={`${window.location.origin}/signup?ref=${profile.referral_code}`} className="h-10 font-mono text-xs" />
+                  <Button variant="outline" onClick={copyReferral}><Copy className="h-4 w-4" /></Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      <SupportBubble />
     </div>
   );
 }
