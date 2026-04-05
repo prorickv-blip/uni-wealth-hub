@@ -491,6 +491,27 @@ export default function Admin() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /> Change Admin Password</CardTitle></CardHeader>
+              <CardContent className="space-y-4 max-w-lg">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">New Password</Label>
+                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Confirm Password</Label>
+                  <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="h-10" />
+                </div>
+                <Button onClick={async () => {
+                  if (!newPassword || newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+                  if (newPassword !== confirmPassword) { toast.error("Passwords do not match"); return; }
+                  const { error } = await supabase.auth.updateUser({ password: newPassword });
+                  if (error) toast.error(error.message);
+                  else { toast.success("Password updated!"); setNewPassword(""); setConfirmPassword(""); }
+                }} className="rounded-full px-6 h-9 text-sm">Update Password</Button>
+              </CardContent>
+            </Card>
+
             <Button onClick={savePlatformSettings} className="rounded-full px-8 h-10 text-sm shadow-lg shadow-primary/20">
               Save All Settings
             </Button>
