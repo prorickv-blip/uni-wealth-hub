@@ -40,6 +40,12 @@ export default function Admin() {
   const [airtelDialCode, setAirtelDialCode] = useState("*185*9#");
   const [logoUrl, setLogoUrl] = useState("");
   const [iconUrl, setIconUrl] = useState("");
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+
+  // Password change
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Updates
   const [updates, setUpdates] = useState<any[]>([]);
