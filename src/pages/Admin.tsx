@@ -424,8 +424,27 @@ export default function Admin() {
                   <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="h-10" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">App Icon URL (small square icon)</Label>
-                  <Input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="https://..." className="h-10" />
+                  <Label className="text-xs font-medium">App Icon / Favicon</Label>
+                  <div className="flex gap-2 items-end">
+                    <Input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="URL or upload below" className="h-10 flex-1" />
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Input type="file" accept="image/*" onChange={(e) => setIconFile(e.target.files?.[0] || null)} className="h-10 flex-1" />
+                    <Button variant="outline" size="sm" disabled={!iconFile || uploadingIcon} onClick={async () => {
+                      if (!iconFile) return;
+                      setUploadingIcon(true);
+                      const ext = iconFile.name.split(".").pop();
+                      const path = `favicon.${ext}`;
+                      await supabase.storage.from("icons").upload(path, iconFile, { upsert: true });
+                      const { data: { publicUrl } } = supabase.storage.from("icons").getPublicUrl(path);
+                      setIconUrl(publicUrl);
+                      setUploadingIcon(false);
+                      setIconFile(null);
+                      toast.success("Icon uploaded!");
+                    }} className="h-9 text-xs">
+                      <Upload className="h-3.5 w-3.5 mr-1" /> {uploadingIcon ? "Uploading..." : "Upload"}
+                    </Button>
+                  </div>
                 </div>
                 {(iconUrl || logoUrl) && (
                   <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border border-border">
