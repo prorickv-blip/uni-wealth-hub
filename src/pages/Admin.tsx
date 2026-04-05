@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, ArrowDownToLine, ArrowUpFromLine, Zap, LogOut, ArrowLeft, Trash2, Image, MessageSquare, DollarSign, TrendingUp, Activity, ShieldAlert, Settings, Newspaper, Bell, Share2, Mail, Lock, Flag, AlertTriangle } from "lucide-react";
+import { Users, ArrowDownToLine, ArrowUpFromLine, Zap, LogOut, ArrowLeft, Trash2, Image, MessageSquare, DollarSign, TrendingUp, Activity, ShieldAlert, Settings, Newspaper, Bell, Share2, Mail, Lock, Flag, AlertTriangle, Upload, KeyRound } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,6 +40,12 @@ export default function Admin() {
   const [airtelDialCode, setAirtelDialCode] = useState("*185*9#");
   const [logoUrl, setLogoUrl] = useState("");
   const [iconUrl, setIconUrl] = useState("");
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+
+  // Password change
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Updates
   const [updates, setUpdates] = useState<any[]>([]);
@@ -418,8 +424,27 @@ export default function Admin() {
                   <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="h-10" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">App Icon URL (small square icon)</Label>
-                  <Input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="https://..." className="h-10" />
+                  <Label className="text-xs font-medium">App Icon / Favicon</Label>
+                  <div className="flex gap-2 items-end">
+                    <Input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="URL or upload below" className="h-10 flex-1" />
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Input type="file" accept="image/*" onChange={(e) => setIconFile(e.target.files?.[0] || null)} className="h-10 flex-1" />
+                    <Button variant="outline" size="sm" disabled={!iconFile || uploadingIcon} onClick={async () => {
+                      if (!iconFile) return;
+                      setUploadingIcon(true);
+                      const ext = iconFile.name.split(".").pop();
+                      const path = `favicon.${ext}`;
+                      await supabase.storage.from("icons").upload(path, iconFile, { upsert: true });
+                      const { data: { publicUrl } } = supabase.storage.from("icons").getPublicUrl(path);
+                      setIconUrl(publicUrl);
+                      setUploadingIcon(false);
+                      setIconFile(null);
+                      toast.success("Icon uploaded!");
+                    }} className="h-9 text-xs">
+                      <Upload className="h-3.5 w-3.5 mr-1" /> {uploadingIcon ? "Uploading..." : "Upload"}
+                    </Button>
+                  </div>
                 </div>
                 {(iconUrl || logoUrl) && (
                   <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border border-border">
@@ -463,6 +488,27 @@ export default function Admin() {
                   <Label className="text-xs font-medium">Airtel Dial Code</Label>
                   <Input value={airtelDialCode} onChange={(e) => setAirtelDialCode(e.target.value)} className="h-10" />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /> Change Admin Password</CardTitle></CardHeader>
+              <CardContent className="space-y-4 max-w-lg">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">New Password</Label>
+                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Confirm Password</Label>
+                  <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="h-10" />
+                </div>
+                <Button onClick={async () => {
+                  if (!newPassword || newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+                  if (newPassword !== confirmPassword) { toast.error("Passwords do not match"); return; }
+                  const { error } = await supabase.auth.updateUser({ password: newPassword });
+                  if (error) toast.error(error.message);
+                  else { toast.success("Password updated!"); setNewPassword(""); setConfirmPassword(""); }
+                }} className="rounded-full px-6 h-9 text-sm">Update Password</Button>
               </CardContent>
             </Card>
 

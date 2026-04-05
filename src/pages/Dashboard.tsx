@@ -95,7 +95,18 @@ export default function Dashboard() {
     });
     setSubmittingDeposit(false);
     if (error) toast.error(error.message);
-    else { toast.success("Deposit submitted for approval!"); setDepositAmount(""); setScreenshot(null); fetchData(); }
+    else {
+      toast.success("Deposit submitted for approval!");
+      setDepositAmount(""); setScreenshot(null);
+      // Create a notification for the user
+      await supabase.from("notifications").insert({
+        title: "Deposit Submitted",
+        message: `Your ${paymentMethod === "airtel_money" ? "Airtel Money" : "USDT TRC20"} deposit of ${paymentMethod === "airtel_money" ? `UGX ${amt.toLocaleString()}` : `$${amt.toFixed(2)}`} has been submitted and is pending approval.`,
+        target: "specific",
+        target_user_id: user!.id,
+      });
+      fetchData();
+    }
   };
 
   const handleWithdraw = async (e: React.FormEvent) => {
@@ -108,7 +119,17 @@ export default function Dashboard() {
     const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user!.id, amount: amt, wallet_address: walletAddr.trim(), status: "pending" });
     setSubmittingWithdraw(false);
     if (error) toast.error(error.message);
-    else { toast.success("Withdrawal submitted!"); setWithdrawAmount(""); setWalletAddr(""); fetchData(); }
+    else {
+      toast.success("Withdrawal submitted!");
+      setWithdrawAmount(""); setWalletAddr("");
+      await supabase.from("notifications").insert({
+        title: "Withdrawal Submitted",
+        message: `Your withdrawal of $${amt.toFixed(2)} to ${walletAddr.trim().slice(0, 12)}... has been submitted and is pending approval.`,
+        target: "specific",
+        target_user_id: user!.id,
+      });
+      fetchData();
+    }
   };
 
   const handleProfileUpdate = async () => {

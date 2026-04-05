@@ -1,0 +1,1 @@
+CREATE POLICY "Users can insert own notifications" ON public.notifications FOR INSERT TO authenticated WITH CHECK (target_user_id = auth.uid());
