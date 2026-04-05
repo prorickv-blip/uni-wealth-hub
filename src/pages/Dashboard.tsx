@@ -95,7 +95,18 @@ export default function Dashboard() {
     });
     setSubmittingDeposit(false);
     if (error) toast.error(error.message);
-    else { toast.success("Deposit submitted for approval!"); setDepositAmount(""); setScreenshot(null); fetchData(); }
+    else {
+      toast.success("Deposit submitted for approval!");
+      setDepositAmount(""); setScreenshot(null);
+      // Create a notification for the user
+      await supabase.from("notifications").insert({
+        title: "Deposit Submitted",
+        message: `Your ${paymentMethod === "airtel_money" ? "Airtel Money" : "USDT TRC20"} deposit of ${paymentMethod === "airtel_money" ? `UGX ${amt.toLocaleString()}` : `$${amt.toFixed(2)}`} has been submitted and is pending approval.`,
+        target: "specific",
+        target_user_id: user!.id,
+      });
+      fetchData();
+    }
   };
 
   const handleWithdraw = async (e: React.FormEvent) => {
