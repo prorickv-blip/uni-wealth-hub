@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import About from "./pages/About";
 import Blog from "./pages/Blog";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
