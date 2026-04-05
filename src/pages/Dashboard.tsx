@@ -254,18 +254,16 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </button>
-                    {location.isUganda && (
-                      <button type="button" onClick={() => { setPaymentMethod("airtel_money"); setCurrency("UGX"); }}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "airtel_money" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center"><Phone className="h-5 w-5 text-destructive" /></div>
-                          <div>
-                            <p className="font-semibold text-sm">Airtel Money</p>
-                            <p className="text-xs text-muted-foreground">Uganda only — UGX</p>
-                          </div>
+                    <button type="button" onClick={() => { setPaymentMethod("airtel_money"); setCurrency("UGX"); }}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${paymentMethod === "airtel_money" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center"><Phone className="h-5 w-5 text-destructive" /></div>
+                        <div>
+                          <p className="font-semibold text-sm">Airtel Money</p>
+                          <p className="text-xs text-muted-foreground">Uganda only — UGX</p>
                         </div>
-                      </button>
-                    )}
+                      </div>
+                    </button>
                   </div>
                 </div>
 
