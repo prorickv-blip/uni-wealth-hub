@@ -52,7 +52,8 @@ export default function Admin() {
   const [newUpdateTitle, setNewUpdateTitle] = useState("");
   const [newUpdateContent, setNewUpdateContent] = useState("");
   const [newUpdateCategory, setNewUpdateCategory] = useState("announcement");
-  const [newUpdateImage, setNewUpdateImage] = useState("");
+  const [newUpdateImageFile, setNewUpdateImageFile] = useState<File | null>(null);
+  const [uploadingUpdateImage, setUploadingUpdateImage] = useState(false);
 
   // Notifications
   const [notifications, setNotifications] = useState<any[]>([]);

@@ -59,6 +59,28 @@ export default function Dashboard() {
     if (user) fetchData();
   }, [user]);
 
+  // Process referral code after login
+  useEffect(() => {
+    if (!user || !profile) return;
+    const refCode = localStorage.getItem("referral_code");
+    if (refCode && !profile.referred_by) {
+      (async () => {
+        // Find the referrer
+        const { data: referrer } = await supabase.from("profiles").select("user_id").eq("referral_code", refCode).maybeSingle();
+        if (referrer && referrer.user_id !== user.id) {
+          await supabase.from("profiles").update({ referred_by: refCode }).eq("user_id", user.id);
+          await supabase.from("referrals").insert({
+            referrer_id: referrer.user_id,
+            referred_id: user.id,
+            referral_code: refCode,
+            status: "pending",
+          });
+          localStorage.removeItem("referral_code");
+        }
+      })();
+    }
+  }, [user, profile]);
+
   const fetchData = async () => {
     const [{ data: p }, { data: d }, { data: w }, { data: pl }] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", user!.id).single(),
