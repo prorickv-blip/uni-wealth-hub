@@ -1,19 +1,24 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +32,11 @@ export default function Signup() {
     if (error) {
       toast.error(error.message);
     } else {
+      // If referral code, store it in profile
+      if (refCode) {
+        // We'll update the profile after the user verifies — store in localStorage for now
+        localStorage.setItem("referral_code", refCode);
+      }
       toast.success("Account created! Check your email to verify, then log in.");
       navigate("/login");
     }
@@ -43,6 +53,11 @@ export default function Signup() {
           <CardDescription>Start investing with UNI today</CardDescription>
         </CardHeader>
         <CardContent>
+          {refCode && (
+            <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20 text-center">
+              <p className="text-xs text-primary font-medium">🎉 You were referred! Code: <strong>{refCode}</strong></p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -54,7 +69,12 @@ export default function Signup() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="h-11" />
+              <div className="relative">
+                <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="h-11 pr-10" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" className="w-full h-11 rounded-full shadow-lg shadow-primary/25" disabled={loading}>
               {loading ? "Creating..." : "Create Account"}

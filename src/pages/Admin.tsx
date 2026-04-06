@@ -52,7 +52,8 @@ export default function Admin() {
   const [newUpdateTitle, setNewUpdateTitle] = useState("");
   const [newUpdateContent, setNewUpdateContent] = useState("");
   const [newUpdateCategory, setNewUpdateCategory] = useState("announcement");
-  const [newUpdateImage, setNewUpdateImage] = useState("");
+  const [newUpdateImageFile, setNewUpdateImageFile] = useState<File | null>(null);
+  const [uploadingUpdateImage, setUploadingUpdateImage] = useState(false);
 
   // Notifications
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -63,6 +64,7 @@ export default function Admin() {
 
   // Inquiries
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/dashboard");
@@ -73,7 +75,7 @@ export default function Admin() {
   }, [user, isAdmin]);
 
   const fetchAll = async () => {
-    const [{ data: u }, { data: d }, { data: w }, { data: la }, { data: up }, { data: notifs }, { data: inq }] = await Promise.all([
+    const [{ data: u }, { data: d }, { data: w }, { data: la }, { data: up }, { data: notifs }, { data: inq }, { data: refs }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("deposit_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("withdrawal_requests").select("*").order("created_at", { ascending: false }),
@@ -81,6 +83,7 @@ export default function Admin() {
       supabase.from("platform_updates").select("*").order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("inquiries").select("*").order("created_at", { ascending: false }),
+      supabase.from("referrals").select("*").order("created_at", { ascending: false }),
     ]);
     setUsers(u || []);
     setDeposits(d || []);
@@ -89,6 +92,7 @@ export default function Admin() {
     setUpdates(up || []);
     setNotifications(notifs || []);
     setInquiries(inq || []);
+    setReferrals(refs || []);
 
     const { data: settings } = await supabase.from("platform_settings").select("*");
     if (settings) {
@@ -110,7 +114,27 @@ export default function Admin() {
     if (e1) { toast.error(e1.message); return; }
     const { error: e2 } = await supabase.from("profiles").update({ deposits: (users.find(u => u.user_id === dep.user_id)?.deposits || 0) + dep.amount }).eq("user_id", dep.user_id);
     if (e2) toast.error(e2.message);
-    else { toast.success("Deposit approved"); fetchAll(); }
+    else {
+      toast.success("Deposit approved");
+      // Check for pending referral and reward referrer (5% of first deposit)
+      const { data: pendingRef } = await supabase.from("referrals").select("*").eq("referred_id", dep.user_id).eq("status", "pending").maybeSingle();
+      if (pendingRef) {
+        const reward = dep.amount * 0.05;
+        await supabase.from("referrals").update({ status: "completed", reward_amount: reward, completed_at: new Date().toISOString() }).eq("id", pendingRef.id);
+        // Credit reward to referrer's profit wallet
+        const referrerProfile = users.find(u => u.user_id === pendingRef.referrer_id);
+        if (referrerProfile) {
+          await supabase.from("profiles").update({ profits: Number(referrerProfile.profits) + reward }).eq("user_id", pendingRef.referrer_id);
+          await supabase.from("notifications").insert({
+            title: "Referral Reward!",
+            message: `You earned $${reward.toFixed(2)} from your referral's first deposit. It's been added to your profit wallet.`,
+            target: "specific",
+            target_user_id: pendingRef.referrer_id,
+          });
+        }
+      }
+      fetchAll();
+    }
   };
 
   const rejectDeposit = async (id: string) => {
@@ -185,14 +209,25 @@ export default function Admin() {
 
   const publishUpdate = async () => {
     if (!newUpdateTitle.trim() || !newUpdateContent.trim()) { toast.error("Title and content required"); return; }
+    setUploadingUpdateImage(true);
+    let imageUrl: string | null = null;
+    if (newUpdateImageFile) {
+      const ext = newUpdateImageFile.name.split(".").pop();
+      const path = `updates/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("update-images").upload(path, newUpdateImageFile);
+      if (upErr) { toast.error("Failed to upload image"); setUploadingUpdateImage(false); return; }
+      const { data: { publicUrl } } = supabase.storage.from("update-images").getPublicUrl(path);
+      imageUrl = publicUrl;
+    }
     await supabase.from("platform_updates").insert({
       title: newUpdateTitle.trim(),
       content: newUpdateContent.trim(),
       category: newUpdateCategory,
-      image_url: newUpdateImage.trim() || null,
+      image_url: imageUrl,
     });
     toast.success("Update published!");
-    setNewUpdateTitle(""); setNewUpdateContent(""); setNewUpdateImage("");
+    setNewUpdateTitle(""); setNewUpdateContent(""); setNewUpdateImageFile(null);
+    setUploadingUpdateImage(false);
     fetchAll();
   };
 
@@ -532,8 +567,13 @@ export default function Admin() {
                     <SelectItem value="blog">Blog</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input placeholder="Image URL (optional)" value={newUpdateImage} onChange={(e) => setNewUpdateImage(e.target.value)} className="h-10" />
-                <Button onClick={publishUpdate} className="rounded-full px-6 h-9 text-sm">Publish Update</Button>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Image (upload from device)</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => setNewUpdateImageFile(e.target.files?.[0] || null)} className="h-10" />
+                </div>
+                <Button onClick={publishUpdate} disabled={uploadingUpdateImage} className="rounded-full px-6 h-9 text-sm">
+                  {uploadingUpdateImage ? "Publishing..." : "Publish Update"}
+                </Button>
               </CardContent>
             </Card>
             {updates.map((u) => (
@@ -599,9 +639,41 @@ export default function Admin() {
           </TabsContent>
 
           {/* Referrals Tab */}
-          <TabsContent value="referrals" className="space-y-3 mt-4">
+          <TabsContent value="referrals" className="space-y-4 mt-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Referral Links</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Referral Tracking</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold">{referrals.length}</p>
+                    <p className="text-[10px] text-muted-foreground">Total Referrals</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-emerald-600">{referrals.filter(r => r.status === "completed").length}</p>
+                    <p className="text-[10px] text-muted-foreground">Completed</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold">{referrals.filter(r => r.status === "pending").length}</p>
+                    <p className="text-[10px] text-muted-foreground">Pending</p>
+                  </div>
+                </div>
+                <div className="divide-y divide-border max-h-80 overflow-y-auto">
+                  {referrals.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Referrer: {getUserEmail(r.referrer_id)}</p>
+                        <p className="text-xs text-muted-foreground">Referred: {getUserEmail(r.referred_id)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Code: {r.referral_code} • Reward: ${Number(r.reward_amount).toFixed(2)}</p>
+                      </div>
+                      <Badge variant={r.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{r.status}</Badge>
+                    </div>
+                  ))}
+                  {referrals.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No referrals yet.</p>}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> User Referral Links</CardTitle></CardHeader>
               <CardContent>
                 <div className="divide-y divide-border">
                   {users.map((u) => (
@@ -609,6 +681,7 @@ export default function Admin() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{u.name || u.email}</p>
                         <p className="text-xs text-muted-foreground font-mono">{u.referral_code}</p>
+                        {u.referred_by && <p className="text-[10px] text-primary">Referred by: {u.referred_by}</p>}
                       </div>
                       <code className="text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded truncate max-w-[200px] hidden sm:block">
                         /signup?ref={u.referral_code}

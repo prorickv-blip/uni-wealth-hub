@@ -36,6 +36,9 @@ export default function Dashboard() {
 
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [walletAddr, setWalletAddr] = useState("");
+  const [withdrawMethod, setWithdrawMethod] = useState<"usdt_trc20" | "airtel_money">("usdt_trc20");
+  const [airtelPhone, setAirtelPhone] = useState("");
+  const [airtelName, setAirtelName] = useState("");
   const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
 
   const [editName, setEditName] = useState("");
@@ -55,6 +58,28 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
+
+  // Process referral code after login
+  useEffect(() => {
+    if (!user || !profile) return;
+    const refCode = localStorage.getItem("referral_code");
+    if (refCode && !profile.referred_by) {
+      (async () => {
+        // Find the referrer
+        const { data: referrer } = await supabase.from("profiles").select("user_id").eq("referral_code", refCode).maybeSingle();
+        if (referrer && referrer.user_id !== user.id) {
+          await supabase.from("profiles").update({ referred_by: refCode }).eq("user_id", user.id);
+          await supabase.from("referrals").insert({
+            referrer_id: referrer.user_id,
+            referred_id: user.id,
+            referral_code: refCode,
+            status: "pending",
+          });
+          localStorage.removeItem("referral_code");
+        }
+      })();
+    }
+  }, [user, profile]);
 
   const fetchData = async () => {
     const [{ data: p }, { data: d }, { data: w }, { data: pl }] = await Promise.all([
@@ -114,17 +139,19 @@ export default function Dashboard() {
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || amt < 15) { toast.error("Minimum withdrawal is $15"); return; }
     if (!profile || amt > profile.profits) { toast.error("Insufficient profits"); return; }
-    if (!walletAddr.trim()) { toast.error("Enter wallet address"); return; }
+    if (withdrawMethod === "usdt_trc20" && !walletAddr.trim()) { toast.error("Enter wallet address"); return; }
+    if (withdrawMethod === "airtel_money" && (!airtelPhone.trim() || !airtelName.trim())) { toast.error("Enter your Airtel number and name"); return; }
     setSubmittingWithdraw(true);
-    const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user!.id, amount: amt, wallet_address: walletAddr.trim(), status: "pending" });
+    const address = withdrawMethod === "airtel_money" ? `Airtel: ${airtelPhone.trim()} (${airtelName.trim()})` : walletAddr.trim();
+    const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user!.id, amount: amt, wallet_address: address, status: "pending" });
     setSubmittingWithdraw(false);
     if (error) toast.error(error.message);
     else {
-      toast.success("Withdrawal submitted!");
-      setWithdrawAmount(""); setWalletAddr("");
+      toast.success("Withdrawal submitted! Please allow 24 hours for processing.");
+      setWithdrawAmount(""); setWalletAddr(""); setAirtelPhone(""); setAirtelName("");
       await supabase.from("notifications").insert({
         title: "Withdrawal Submitted",
-        message: `Your withdrawal of $${amt.toFixed(2)} to ${walletAddr.trim().slice(0, 12)}... has been submitted and is pending approval.`,
+        message: `Your ${withdrawMethod === "airtel_money" ? "Airtel Money" : "USDT"} withdrawal of $${amt.toFixed(2)} has been submitted. Please allow up to 24 hours for verification.`,
         target: "specific",
         target_user_id: user!.id,
       });
@@ -412,12 +439,61 @@ export default function Dashboard() {
                 <CardTitle className="font-display text-lg">Withdraw Profits</CardTitle>
                 <p className="text-sm text-muted-foreground">Available: <span className="text-emerald-600 font-semibold">${Number(profile.profits).toFixed(2)}</span></p>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleWithdraw} className="space-y-4 max-w-lg">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">USDT TRC20 Wallet Address</Label>
-                    <Input value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)} placeholder="T..." required className="h-10" />
+              <CardContent className="space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Withdrawal Method</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button type="button" onClick={() => setWithdrawMethod("usdt_trc20")}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${withdrawMethod === "usdt_trc20" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><Globe className="h-5 w-5 text-primary" /></div>
+                        <div>
+                          <p className="font-semibold text-sm">USDT (TRC20)</p>
+                          <p className="text-xs text-muted-foreground">Crypto withdrawal</p>
+                        </div>
+                      </div>
+                    </button>
+                    <button type="button" onClick={() => setWithdrawMethod("airtel_money")}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${withdrawMethod === "airtel_money" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center"><Phone className="h-5 w-5 text-destructive" /></div>
+                        <div>
+                          <p className="font-semibold text-sm">Airtel Money</p>
+                          <p className="text-xs text-muted-foreground">Uganda only — UGX</p>
+                        </div>
+                      </div>
+                    </button>
                   </div>
+                </div>
+
+                <form onSubmit={handleWithdraw} className="space-y-4 max-w-lg">
+                  {withdrawMethod === "usdt_trc20" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">USDT TRC20 Wallet Address</Label>
+                      <Input value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)} placeholder="T..." className="h-10" />
+                    </div>
+                  )}
+                  {withdrawMethod === "airtel_money" && (
+                    <>
+                      <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <div className="text-xs text-amber-700 dark:text-amber-400 space-y-1">
+                            <p>Withdrawals are processed within <strong>24 hours</strong>.</p>
+                            <p>We verify and send the money to your Airtel number.</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Full Name (as on Airtel)</Label>
+                        <Input value={airtelName} onChange={(e) => setAirtelName(e.target.value)} placeholder="John Doe" className="h-10" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Airtel Money Phone Number</Label>
+                        <Input value={airtelPhone} onChange={(e) => setAirtelPhone(e.target.value)} placeholder="07XXXXXXXX" className="h-10" />
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium">Amount (min $15)</Label>
                     <Input type="number" min="15" step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="15.00" required className="h-10" />
