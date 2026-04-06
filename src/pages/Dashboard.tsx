@@ -117,17 +117,19 @@ export default function Dashboard() {
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || amt < 15) { toast.error("Minimum withdrawal is $15"); return; }
     if (!profile || amt > profile.profits) { toast.error("Insufficient profits"); return; }
-    if (!walletAddr.trim()) { toast.error("Enter wallet address"); return; }
+    if (withdrawMethod === "usdt_trc20" && !walletAddr.trim()) { toast.error("Enter wallet address"); return; }
+    if (withdrawMethod === "airtel_money" && (!airtelPhone.trim() || !airtelName.trim())) { toast.error("Enter your Airtel number and name"); return; }
     setSubmittingWithdraw(true);
-    const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user!.id, amount: amt, wallet_address: walletAddr.trim(), status: "pending" });
+    const address = withdrawMethod === "airtel_money" ? `Airtel: ${airtelPhone.trim()} (${airtelName.trim()})` : walletAddr.trim();
+    const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user!.id, amount: amt, wallet_address: address, status: "pending" });
     setSubmittingWithdraw(false);
     if (error) toast.error(error.message);
     else {
-      toast.success("Withdrawal submitted!");
-      setWithdrawAmount(""); setWalletAddr("");
+      toast.success("Withdrawal submitted! Please allow 24 hours for processing.");
+      setWithdrawAmount(""); setWalletAddr(""); setAirtelPhone(""); setAirtelName("");
       await supabase.from("notifications").insert({
         title: "Withdrawal Submitted",
-        message: `Your withdrawal of $${amt.toFixed(2)} to ${walletAddr.trim().slice(0, 12)}... has been submitted and is pending approval.`,
+        message: `Your ${withdrawMethod === "airtel_money" ? "Airtel Money" : "USDT"} withdrawal of $${amt.toFixed(2)} has been submitted. Please allow up to 24 hours for verification.`,
         target: "specific",
         target_user_id: user!.id,
       });
