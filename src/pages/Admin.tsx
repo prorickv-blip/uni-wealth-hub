@@ -544,8 +544,13 @@ export default function Admin() {
                     <SelectItem value="blog">Blog</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input placeholder="Image URL (optional)" value={newUpdateImage} onChange={(e) => setNewUpdateImage(e.target.value)} className="h-10" />
-                <Button onClick={publishUpdate} className="rounded-full px-6 h-9 text-sm">Publish Update</Button>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Image (upload from device)</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => setNewUpdateImageFile(e.target.files?.[0] || null)} className="h-10" />
+                </div>
+                <Button onClick={publishUpdate} disabled={uploadingUpdateImage} className="rounded-full px-6 h-9 text-sm">
+                  {uploadingUpdateImage ? "Publishing..." : "Publish Update"}
+                </Button>
               </CardContent>
             </Card>
             {updates.map((u) => (
