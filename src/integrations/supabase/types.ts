@@ -236,6 +236,7 @@ export type Database = {
           name: string
           profits: number
           referral_code: string
+          referred_by: string | null
           updated_at: string
           user_id: string
         }
@@ -250,6 +251,7 @@ export type Database = {
           name?: string
           profits?: number
           referral_code?: string
+          referred_by?: string | null
           updated_at?: string
           user_id: string
         }
@@ -264,6 +266,7 @@ export type Database = {
           name?: string
           profits?: number
           referral_code?: string
+          referred_by?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -287,6 +290,39 @@ export type Database = {
           created_at?: string
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          reward_amount: number
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          reward_amount?: number
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          status?: string
         }
         Relationships: []
       }
