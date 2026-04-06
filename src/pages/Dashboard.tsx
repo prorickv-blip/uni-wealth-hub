@@ -36,6 +36,9 @@ export default function Dashboard() {
 
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [walletAddr, setWalletAddr] = useState("");
+  const [withdrawMethod, setWithdrawMethod] = useState<"usdt_trc20" | "airtel_money">("usdt_trc20");
+  const [airtelPhone, setAirtelPhone] = useState("");
+  const [airtelName, setAirtelName] = useState("");
   const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
 
   const [editName, setEditName] = useState("");
