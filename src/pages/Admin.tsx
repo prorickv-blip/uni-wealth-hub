@@ -136,7 +136,6 @@ export default function Admin() {
       fetchAll();
     }
   };
-  };
 
   const rejectDeposit = async (id: string) => {
     await supabase.from("deposit_requests").update({ status: "rejected" }).eq("id", id);
