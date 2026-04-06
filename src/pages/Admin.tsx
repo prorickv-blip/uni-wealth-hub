@@ -114,7 +114,28 @@ export default function Admin() {
     if (e1) { toast.error(e1.message); return; }
     const { error: e2 } = await supabase.from("profiles").update({ deposits: (users.find(u => u.user_id === dep.user_id)?.deposits || 0) + dep.amount }).eq("user_id", dep.user_id);
     if (e2) toast.error(e2.message);
-    else { toast.success("Deposit approved"); fetchAll(); }
+    else {
+      toast.success("Deposit approved");
+      // Check for pending referral and reward referrer (5% of first deposit)
+      const { data: pendingRef } = await supabase.from("referrals").select("*").eq("referred_id", dep.user_id).eq("status", "pending").maybeSingle();
+      if (pendingRef) {
+        const reward = dep.amount * 0.05;
+        await supabase.from("referrals").update({ status: "completed", reward_amount: reward, completed_at: new Date().toISOString() }).eq("id", pendingRef.id);
+        // Credit reward to referrer's profit wallet
+        const referrerProfile = users.find(u => u.user_id === pendingRef.referrer_id);
+        if (referrerProfile) {
+          await supabase.from("profiles").update({ profits: Number(referrerProfile.profits) + reward }).eq("user_id", pendingRef.referrer_id);
+          await supabase.from("notifications").insert({
+            title: "Referral Reward!",
+            message: `You earned $${reward.toFixed(2)} from your referral's first deposit. It's been added to your profit wallet.`,
+            target: "specific",
+            target_user_id: pendingRef.referrer_id,
+          });
+        }
+      }
+      fetchAll();
+    }
+  };
   };
 
   const rejectDeposit = async (id: string) => {
