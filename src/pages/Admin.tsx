@@ -672,11 +672,6 @@ export default function Admin() {
               </CardContent>
             </Card>
           </TabsContent>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Inquiries Tab */}
           <TabsContent value="inquiries" className="space-y-3 mt-4">
