@@ -75,7 +75,7 @@ export default function Admin() {
   }, [user, isAdmin]);
 
   const fetchAll = async () => {
-    const [{ data: u }, { data: d }, { data: w }, { data: la }, { data: up }, { data: notifs }, { data: inq }] = await Promise.all([
+    const [{ data: u }, { data: d }, { data: w }, { data: la }, { data: up }, { data: notifs }, { data: inq }, { data: refs }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("deposit_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("withdrawal_requests").select("*").order("created_at", { ascending: false }),
@@ -83,6 +83,7 @@ export default function Admin() {
       supabase.from("platform_updates").select("*").order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("inquiries").select("*").order("created_at", { ascending: false }),
+      supabase.from("referrals").select("*").order("created_at", { ascending: false }),
     ]);
     setUsers(u || []);
     setDeposits(d || []);
@@ -91,6 +92,7 @@ export default function Admin() {
     setUpdates(up || []);
     setNotifications(notifs || []);
     setInquiries(inq || []);
+    setReferrals(refs || []);
 
     const { data: settings } = await supabase.from("platform_settings").select("*");
     if (settings) {
