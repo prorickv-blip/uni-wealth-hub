@@ -619,9 +619,41 @@ export default function Admin() {
           </TabsContent>
 
           {/* Referrals Tab */}
-          <TabsContent value="referrals" className="space-y-3 mt-4">
+          <TabsContent value="referrals" className="space-y-4 mt-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Referral Links</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Referral Tracking</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold">{referrals.length}</p>
+                    <p className="text-[10px] text-muted-foreground">Total Referrals</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-emerald-600">{referrals.filter(r => r.status === "completed").length}</p>
+                    <p className="text-[10px] text-muted-foreground">Completed</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold">{referrals.filter(r => r.status === "pending").length}</p>
+                    <p className="text-[10px] text-muted-foreground">Pending</p>
+                  </div>
+                </div>
+                <div className="divide-y divide-border max-h-80 overflow-y-auto">
+                  {referrals.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Referrer: {getUserEmail(r.referrer_id)}</p>
+                        <p className="text-xs text-muted-foreground">Referred: {getUserEmail(r.referred_id)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Code: {r.referral_code} • Reward: ${Number(r.reward_amount).toFixed(2)}</p>
+                      </div>
+                      <Badge variant={r.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{r.status}</Badge>
+                    </div>
+                  ))}
+                  {referrals.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No referrals yet.</p>}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> User Referral Links</CardTitle></CardHeader>
               <CardContent>
                 <div className="divide-y divide-border">
                   {users.map((u) => (
@@ -629,11 +661,17 @@ export default function Admin() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{u.name || u.email}</p>
                         <p className="text-xs text-muted-foreground font-mono">{u.referral_code}</p>
+                        {u.referred_by && <p className="text-[10px] text-primary">Referred by: {u.referred_by}</p>}
                       </div>
                       <code className="text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded truncate max-w-[200px] hidden sm:block">
                         /signup?ref={u.referral_code}
                       </code>
                     </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
                   ))}
                 </div>
               </CardContent>
