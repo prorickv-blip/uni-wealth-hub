@@ -64,6 +64,7 @@ export default function Admin() {
 
   // Inquiries
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/dashboard");
