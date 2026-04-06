@@ -186,14 +186,25 @@ export default function Admin() {
 
   const publishUpdate = async () => {
     if (!newUpdateTitle.trim() || !newUpdateContent.trim()) { toast.error("Title and content required"); return; }
+    setUploadingUpdateImage(true);
+    let imageUrl: string | null = null;
+    if (newUpdateImageFile) {
+      const ext = newUpdateImageFile.name.split(".").pop();
+      const path = `updates/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("update-images").upload(path, newUpdateImageFile);
+      if (upErr) { toast.error("Failed to upload image"); setUploadingUpdateImage(false); return; }
+      const { data: { publicUrl } } = supabase.storage.from("update-images").getPublicUrl(path);
+      imageUrl = publicUrl;
+    }
     await supabase.from("platform_updates").insert({
       title: newUpdateTitle.trim(),
       content: newUpdateContent.trim(),
       category: newUpdateCategory,
-      image_url: newUpdateImage.trim() || null,
+      image_url: imageUrl,
     });
     toast.success("Update published!");
-    setNewUpdateTitle(""); setNewUpdateContent(""); setNewUpdateImage("");
+    setNewUpdateTitle(""); setNewUpdateContent(""); setNewUpdateImageFile(null);
+    setUploadingUpdateImage(false);
     fetchAll();
   };
 
